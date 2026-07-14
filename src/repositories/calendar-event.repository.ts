@@ -8,72 +8,193 @@ import { calendarEvent } from "../db/schema";
 
 export class CalendarEventRepository {
     constructor(private db: BetterSQLite3Database) { }
+    private mapCalendarEvent(event: {
+        id: number,
+        date: string,
+        event: string,
+        isCompleteDay: boolean,
+        isBirthday: boolean,
+        isVacation: boolean,
+        importId: number | null
+    }): CalendarEvent | null {
+        return {
+            date: event.date,
+            event: event.event,
+            isCompleteDay: event.isCompleteDay,
+            isBirthday: event.isBirthday,
+            isVacation: event.isVacation,
+            importId: event.importId,
+            id: event.id,
+        };
+    }
+    private mapCalendarEvents(events: {
+        id: number,
+        date: string,
+        event: string,
+        isCompleteDay: boolean,
+        isBirthday: boolean,
+        isVacation: boolean,
+        importId: number | null
+    }[]) {
+        return events.map((event) => {
+            return {
+                date: event.date,
+                event: event.event,
+                isCompleteDay: event.isCompleteDay,
+                isBirthday: event.isBirthday,
+                isVacation: event.isVacation,
+                importId: event.importId,
+                id: event.id,
+            };
+        });
+    }
     async allCalendarEvents(): Promise<CalendarEvent[]> {
-        return await this.db.select().from(calendarEvent).execute();
+        const data = await this.db.select().from(calendarEvent).where(
+            and(
+                eq(calendarEvent.isBirthday, false),
+                eq(calendarEvent.isVacation, false)
+            )
+        ).execute();
+        return this.mapCalendarEvents(data);
     }
-    async allByMonthAndYear(
+    async allBirthdays(): Promise<CalendarEvent[]> {
+        const data = await this.db.select().from(calendarEvent).where(
+            eq(calendarEvent.isBirthday, true)
+        ).execute();
+        return this.mapCalendarEvents(data);
+    }
+    async allVacations(): Promise<CalendarEvent[]> {
+        const data = await this.db.select().from(calendarEvent).where(
+            eq(calendarEvent.isVacation, true)
+        ).execute();
+        return this.mapCalendarEvents(data);
+    }
+
+    async allEventsByMonthAndYear(
         month: number,
         year: number,
     ): Promise<CalendarEvent[]> {
-        const events = await this.getAll(STORE_NAME);
-
-        if (events) {
-            return from(events)
-                .where((e) => (!e.isBirthday && (moment(e.date).month() == month && moment(e.date).year() == year)) || (e.isBirthday && moment(e.date).month() == month))
-                .toArray();
-        }
-        return events;
+        const startDate = dayjs().year(year).month(month).startOf('month').format('YYYY-MM-DD');
+        const endDate = dayjs().year(year).month(month).endOf('month').format('YYYY-MM-DD');
+        const data = await this.db.select()
+            .from(calendarEvent)
+            .where(
+                and(
+                    gte(calendarEvent.date, startDate),
+                    lte(calendarEvent.date, endDate),
+                    eq(calendarEvent.isBirthday, false),
+                    eq(calendarEvent.isVacation, false)
+                )
+            )
+            .execute();
+        return this.mapCalendarEvents(data);
     }
-    async allByDayMonthAndYear(
-        day: number,
+    async allVacationsByMonthAndYear(
         month: number,
         year: number,
     ): Promise<CalendarEvent[]> {
-        const events = await this.getAll(STORE_NAME);
-
-        if (events) {
-            return from(events)
-                .where((e) => (!e.isBirthday && (moment(e.date).date() == day && moment(e.date).month() == month && moment(e.date).year() == year)) || (e.isBirthday && moment(e.date).month() == month))
-                .toArray();
-        }
-        return events;
+        const startDate = dayjs().year(year).month(month).startOf('month').format('YYYY-MM-DD');
+        const endDate = dayjs().year(year).month(month).endOf('month').format('YYYY-MM-DD');
+        const data = await this.db.select()
+            .from(calendarEvent)
+            .where(
+                and(
+                    gte(calendarEvent.date, startDate),
+                    lte(calendarEvent.date, endDate),
+                    eq(calendarEvent.isVacation, true)
+                )
+            )
+            .execute();
+        return this.mapCalendarEvents(data);
+    }
+    async allBirthdaysByMonthAndYear(
+        month: number,
+        year: number,
+    ): Promise<CalendarEvent[]> {
+        const startDate = dayjs().year(year).month(month).startOf('month').format('YYYY-MM-DD');
+        const endDate = dayjs().year(year).month(month).endOf('month').format('YYYY-MM-DD');
+        const data = await this.db.select()
+            .from(calendarEvent)
+            .where(
+                and(
+                    gte(calendarEvent.date, startDate),
+                    lte(calendarEvent.date, endDate),
+                    eq(calendarEvent.isBirthday, true)
+                )
+            )
+            .execute();
+        return this.mapCalendarEvents(data);
     }
     async searchEvents(event: string, onlyBirthday: boolean): Promise<CalendarEvent[]> {
-        const events = await this.getAll(STORE_NAME);
-        if (events) {
-            return from(events)
-                .where((e) => e.event.toLowerCase().indexOf(event.toLowerCase()) != -1 && (onlyBirthday ? e.isBirthday : true))
-                .toArray();
-        }
-        return events;
+        const events = await this.allCalendarEvents();
+        return from(events)
+            .where((e) => e.event.toLowerCase().indexOf(event.toLowerCase()) != -1 && (onlyBirthday ? e.isBirthday : true))
+            .toArray();
     }
-    async saveCalendarEvent(
-        calendarEvent: CalendarEvent,
-    ): Promise<CalendarEvent | null> {
-        const { date, event, isCompleteDay, isBirthday, id } =
-            calendarEvent;
-
-        if (calendarEvent.id) {
-            await this.update(STORE_NAME, {
-                id,
-                date,
+    private async save(
+        id: number | null,
+        date: string,
+        event: string,
+        isCompleteDay: boolean,
+        isBirthday: boolean,
+        isVacation: boolean
+    ): Promise<void> {
+        const formatedDate = dayjs(date).format('YYYY-MM-DD');
+        if (id) {
+            await this.db.update(calendarEvent).set({
+                date: formatedDate,
                 event,
                 isCompleteDay,
                 isBirthday,
-            });
-            return await this.byId(STORE_NAME, calendarEvent.id);
+                isVacation
+            }).where(eq(calendarEvent.id, id)).execute();
+        } else {
+            await this.db.insert(calendarEvent).values({
+                date: formatedDate,
+                event,
+                isCompleteDay,
+                isBirthday,
+                isVacation
+            }).execute();
         }
-        await this.save(STORE_NAME, {
-            date,
-            event,
-            isCompleteDay,
-            isBirthday,
-        });
-        const events = await this.getAll(STORE_NAME);
-        if (events) {
-            return events[events.length - 1];
-        }
-        return null;
+    }
+    async saveCalendarEvent({
+        id,
+        date,
+        event,
+        isCompleteDay,
+    }: {
+        id: number | null,
+        date: string,
+        event: string,
+        isCompleteDay: boolean,
+    }): Promise<void> {
+        await this.save(id, date, event, isCompleteDay, false, false);
+    }
+    async saveBirthday({
+        id,
+        date,
+        event
+    }: {
+        id: number | null,
+        date: string,
+        event: string,
+    }): Promise<void> {
+        await this.save(id, date, event, true, true, false);
+    }
+    async saveVacation({
+        id,
+        date,
+        event,
+        isCompleteDay,
+    }: {
+        id: number | null,
+        date: string,
+        event: string,
+        isCompleteDay: boolean,
+        isVacation: boolean
+    }): Promise<void> {
+        await this.save(id, date, event, isCompleteDay, false, true);
     }
     async deleteEvents(ids: number[]): Promise<void> {
         if (ids.length == 0) {
@@ -81,12 +202,12 @@ export class CalendarEventRepository {
         }
         ids.forEach((id) => {
             (async () => {
-                await this.delete(STORE_NAME, id);
+                await this.deleteEvent(id);
             })();
         });
 
     }
-    async calendarEventById(id: number): Promise<CalendarEvent | null> {
-        return await this.byId(STORE_NAME, id);
+    async deleteEvent(id: number): Promise<void> {
+        await this.db.delete(calendarEvent).where(eq(calendarEvent.id, id)).execute();
     }
 }

@@ -48,6 +48,12 @@ export class CalendarEventRepository {
             };
         });
     }
+    async calendarEventById(id: number): Promise<CalendarEvent | null> {
+        const data = await this.db.select().from(calendarEvent).where(
+            eq(calendarEvent.id, id)
+        ).execute();
+        return this.mapCalendarEvent(data[0]);
+    }
     async allCalendarEvents(): Promise<CalendarEvent[]> {
         const data = await this.db.select().from(calendarEvent).where(
             and(
@@ -162,12 +168,12 @@ export class CalendarEventRepository {
         id,
         date,
         event,
-        isCompleteDay,
+        isCompleteDay
     }: {
         id: number | null,
         date: string,
         event: string,
-        isCompleteDay: boolean,
+        isCompleteDay: boolean
     }): Promise<void> {
         await this.save(id, date, event, isCompleteDay, false, false);
     }
@@ -178,7 +184,7 @@ export class CalendarEventRepository {
     }: {
         id: number | null,
         date: string,
-        event: string,
+        event: string
     }): Promise<void> {
         await this.save(id, date, event, true, true, false);
     }
@@ -186,13 +192,12 @@ export class CalendarEventRepository {
         id,
         date,
         event,
-        isCompleteDay,
+        isCompleteDay
     }: {
         id: number | null,
         date: string,
         event: string,
-        isCompleteDay: boolean,
-        isVacation: boolean
+        isCompleteDay: boolean
     }): Promise<void> {
         await this.save(id, date, event, isCompleteDay, false, true);
     }

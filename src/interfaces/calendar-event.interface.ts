@@ -5,5 +5,5 @@ export interface CalendarEvent {
     isCompleteDay: boolean;
     isBirthday: boolean;
     isVacation: boolean;
-    importId: number | null;
+    clientId: number | null;
 }

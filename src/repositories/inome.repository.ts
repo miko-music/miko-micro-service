@@ -8,7 +8,17 @@ import { HouseHoldStatistic } from '../interfaces/house-hold-statistic.interface
 
 export class IncomeRepository {
     constructor(private db: BetterSQLite3Database) { }
-    private mapIncome(row: { id: number, serverId: number | null, name: string, amount: number, date: string, description: string, updatedAt: string, category: string, type: string }): Income {
+    private mapIncome(row: {
+        id: number,
+        serverId: number | null,
+        name: string,
+        amount: number,
+        date: string,
+        description: string,
+        updatedAt: string,
+        category: string,
+        type: string
+    }): Income {
         return {
             id: row.id,
             serverId: row.serverId,
@@ -170,7 +180,7 @@ export class IncomeRepository {
         if (data.id) {
             await this.db.update(income).set({
                 id: data.id,
-                serverId: data.serverId,
+                clientId: data.clientId,
                 name: data.name,
                 amount: data.amount,
                 date: dayjs(data.date).format('YYYY-MM-DD'),
@@ -183,7 +193,7 @@ export class IncomeRepository {
         else {
             await this.db.insert(income).values({
                 name: data.name,
-                serverId: data.serverId,
+                clientId: data.clientId,
                 amount: data.amount,
                 date: dayjs(data.date).format('YYYY-MM-DD'),
                 description: data.description,

@@ -9,7 +9,7 @@ export const income = sqliteTable('income', {
     category: text('category').notNull(),
     type: text('type').notNull(),
     amount: real('amount').notNull(),
-    serverId: integer('serverId'),
+    clientId: integer('clientId'),
 });
 export const outgoing = sqliteTable('outgoing', {
     id: integer('id').primaryKey({ autoIncrement: true }),
@@ -20,7 +20,7 @@ export const outgoing = sqliteTable('outgoing', {
     category: text('category').notNull(),
     type: text('type').notNull(),
     amount: real('amount').notNull(),
-    serverId: integer('serverId'),
+    clientId: integer('clientId'),
     installmentPaymentId: integer('installmentPaymentId'),
 });
 export const calendarEvent = sqliteTable('calendar_event', {
@@ -30,5 +30,5 @@ export const calendarEvent = sqliteTable('calendar_event', {
     isCompleteDay: integer('is_complete_day', { mode: 'boolean' }).notNull(),
     isBirthday: integer('is_birthday', { mode: 'boolean' }).notNull(),
     isVacation: integer('is_vacation', { mode: 'boolean' }).notNull(),
-    importId: integer('import_id'),
+    clientId: integer('clientId'),
 });

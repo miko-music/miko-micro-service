@@ -1,6 +1,6 @@
 export interface OutgoingBase {
     id: number | null;
-    serverId: number | null;
+    clientId: number | null;
     name: string;
     date: string;
     updatedAt: string;

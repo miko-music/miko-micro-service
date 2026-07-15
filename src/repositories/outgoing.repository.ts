@@ -10,7 +10,7 @@ export class OutgoingRepository {
     constructor(private db: BetterSQLite3Database) { }
     private mapOutgoing(row: {
         id: number,
-        serverId: number | null,
+        clientId: number | null,
         name: string,
         amount: number,
         date: string,
@@ -22,7 +22,7 @@ export class OutgoingRepository {
     }): Outgoing {
         return {
             id: row.id,
-            serverId: row.serverId,
+            clientId: row.clientId,
             name: row.name,
             amount: row.amount,
             date: row.date,
@@ -33,11 +33,22 @@ export class OutgoingRepository {
             installmentPaymentId: row.installmentPaymentId,
         };
     }
-    private mapOutgoings(rows: { id: number, serverId: number | null, name: string, amount: number, date: string, description: string, updatedAt: string, category: string, type: string, installmentPaymentId: number | null }[]): Outgoing[] {
+    private mapOutgoings(rows: {
+        id: number,
+        clientId: number | null,
+        name: string,
+        amount: number,
+        date: string,
+        description: string,
+        updatedAt: string,
+        category: string,
+        type: string,
+        installmentPaymentId: number | null
+    }[]): Outgoing[] {
         return rows.map((row) => {
             return {
                 id: row.id,
-                serverId: row.serverId,
+                clientId: row.clientId,
                 name: row.name,
                 amount: row.amount,
                 date: row.date,
@@ -158,7 +169,7 @@ export class OutgoingRepository {
         if (data.id) {
             await this.db.update(outgoing).set({
                 id: data.id,
-                serverId: data.serverId,
+                clientId: data.clientId,
                 name: data.name,
                 amount: data.amount,
                 date: dayjs(data.date).format('YYYY-MM-DD'),
@@ -172,7 +183,7 @@ export class OutgoingRepository {
         else {
             await this.db.insert(outgoing).values({
                 name: data.name,
-                serverId: data.serverId,
+                clientId: data.clientId,
                 amount: data.amount,
                 date: dayjs(data.date).format('YYYY-MM-DD'),
                 description: data.description,

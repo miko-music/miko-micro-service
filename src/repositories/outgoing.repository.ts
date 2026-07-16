@@ -1,7 +1,7 @@
 import { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import { outgoing } from "../db/schema";
 import type { Outgoing } from "../interfaces/outgoing.interface";
-import { eq, inArray, like, gte, lte, and } from "drizzle-orm";
+import { eq, inArray, like, gte, lte, and, asc, desc } from "drizzle-orm";
 import dayjs from "dayjs";
 import { HouseHoldStatistic } from "../interfaces/house-hold-statistic.interface";
 import { from } from "linq-to-typescript";
@@ -61,7 +61,7 @@ export class OutgoingRepository {
         });
     }
     async allOutgoing(): Promise<Outgoing[]> {
-        const data = await this.db.select().from(outgoing).execute();
+        const data = await this.db.select().from(outgoing).orderBy(desc(outgoing.date)).execute();
         return this.mapOutgoings(data);
     }
     async outgoingById(id: number): Promise<Outgoing | null> {
@@ -75,14 +75,20 @@ export class OutgoingRepository {
         if (ids.length === 0) {
             return [];
         }
-        return this.mapOutgoings(await this.db
+        return await this.mapOutgoings(await this.db
             .select()
             .from(outgoing)
-            .where(inArray(outgoing.id, ids)));
+            .where(inArray(outgoing.id, ids))
+            .orderBy(desc(outgoing.date)).execute());
     }
     async allOutgoingByYear(year: number): Promise<Outgoing[]> {
         const dateString = year.toString();
-        return this.mapOutgoings(await this.db.select().from(outgoing).where(like(outgoing.date, dateString)).execute());
+        return this.mapOutgoings(await this.db
+            .select()
+            .from(outgoing)
+            .where(like(outgoing.date, dateString))
+            .orderBy(desc(outgoing.date))
+            .execute());
     }
     async allOutgoingByYearTillMonth(year: number, month: number): Promise<Outgoing[]> {
         const startDate = dayjs().year(year).month(0).startOf('month').format('YYYY-MM-DD');
@@ -97,6 +103,7 @@ export class OutgoingRepository {
                     lte(outgoing.date, endDate)
                 )
             )
+            .orderBy(desc(outgoing.date))
             .execute();
 
         return this.mapOutgoings(data);
@@ -110,6 +117,7 @@ export class OutgoingRepository {
             .where(
                 lte(outgoing.date, endDate)
             )
+            .orderBy(desc(outgoing.date))
             .execute();
 
         return this.mapOutgoings(data);
@@ -123,6 +131,7 @@ export class OutgoingRepository {
             .where(
                 lte(outgoing.date, endDate)
             )
+            .orderBy(desc(outgoing.date))
             .execute();
 
         return this.mapOutgoings(data);

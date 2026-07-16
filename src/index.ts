@@ -1,4 +1,5 @@
 import { Hono } from 'hono'
+import { serve } from '@hono/node-server'
 import { IncomeRepository } from "./repositories/inome.repository";
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import Database from 'better-sqlite3';
@@ -24,5 +25,6 @@ const app = new Hono()
 app.route('/income', incomeController(incomeService));
 app.route('/outgoing', outgoingController(outgoingService));
 app.route('/calendar-events', calendarEventController(calendarEventService));
-
-export default app
+const port = 3000
+serve({ fetch: app.fetch, port })
+console.log(`Server is running on http://localhost:${port}`)

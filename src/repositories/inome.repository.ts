@@ -1,6 +1,6 @@
 import { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 import { income } from '../db/schema';
-import { eq, inArray, like, and, gte, lte, sum } from 'drizzle-orm';
+import { eq, inArray, like, and, gte, lte, sum, asc, desc } from 'drizzle-orm';
 import type { Income } from '../interfaces/income.interface';
 import dayjs from 'dayjs';
 import { from } from "linq-to-typescript";
@@ -10,7 +10,7 @@ export class IncomeRepository {
     constructor(private db: BetterSQLite3Database) { }
     private mapIncome(row: {
         id: number,
-        serverId: number | null,
+        clientId: number | null,
         name: string,
         amount: number,
         date: string,
@@ -21,7 +21,7 @@ export class IncomeRepository {
     }): Income {
         return {
             id: row.id,
-            serverId: row.serverId,
+            clientId: row.clientId,
             name: row.name,
             amount: row.amount,
             date: row.date,
@@ -34,7 +34,7 @@ export class IncomeRepository {
     private mapIncomes(rows:
         {
             id: number,
-            serverId: number | null,
+            clientId: number | null,
             name: string,
             amount: number,
             date: string,
@@ -46,7 +46,7 @@ export class IncomeRepository {
         return rows.map((row) => {
             return {
                 id: row.id,
-                serverId: row.serverId,
+                clientId: row.clientId,
                 name: row.name,
                 amount: row.amount,
                 date: row.date,
@@ -58,11 +58,18 @@ export class IncomeRepository {
         });
     }
     async allIncome(): Promise<Income[]> {
-        const data = await this.db.select().from(income).execute();
+        const data = await this.db
+            .select()
+            .from(income)
+            .orderBy(desc(income.date))
+            .execute();
         return this.mapIncomes(data);
     }
     async incomeById(id: number): Promise<Income | null> {
-        const data = await this.db.select().from(income).where(eq(income.id, id)).execute();
+        const data = await this.db
+            .select()
+            .from(income)
+            .where(eq(income.id, id)).execute();
         if (!data || data.length === 0) {
             return null;
         }
@@ -76,11 +83,18 @@ export class IncomeRepository {
         return this.mapIncomes(await this.db
             .select()
             .from(income)
-            .where(inArray(income.id, ids)));
+            .where(inArray(income.id, ids))
+            .orderBy(desc(income.date))
+            .execute());
     }
     async allIncomeByYear(year: number): Promise<Income[]> {
         const dateString = year.toString();
-        return this.mapIncomes(await this.db.select().from(income).where(like(income.date, dateString)).execute());
+        return this.mapIncomes(await this.db
+            .select()
+            .from(income)
+            .where(like(income.date, dateString))
+            .orderBy(desc(income.date))
+            .execute());
     }
     async allIncomeByYearTillMonth(year: number, month: number): Promise<Income[]> {
         const startDate = dayjs().year(year).month(0).startOf('month').format('YYYY-MM-DD');
@@ -95,6 +109,7 @@ export class IncomeRepository {
                     lte(income.date, endDate)
                 )
             )
+            .orderBy(desc(income.date))
             .execute();
 
         return this.mapIncomes(data);
@@ -108,6 +123,7 @@ export class IncomeRepository {
             .where(
                 lte(income.date, endDate)
             )
+            .orderBy(desc(income.date))
             .execute();
 
         return this.mapIncomes(data);
@@ -121,6 +137,7 @@ export class IncomeRepository {
             .where(
                 lte(income.date, endDate)
             )
+            .orderBy(desc(income.date))
             .execute();
 
         return this.mapIncomes(data);
